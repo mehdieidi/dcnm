@@ -10,7 +10,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-var transactionLogger *TransactionLogger
+var transact TransactionLogger
 
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -40,7 +40,7 @@ func keyValuePutHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	transactionLogger.WritePut(key, string(value))
+	transact.WritePut(key, string(value))
 
 	w.WriteHeader(http.StatusCreated)
 
@@ -76,7 +76,7 @@ func keyValueDeleteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	transactionLogger.WriteDelete(key)
+	transact.WriteDelete(key)
 
 	log.Printf("DELETE key=%s\n", key)
 }
@@ -84,12 +84,17 @@ func keyValueDeleteHandler(w http.ResponseWriter, r *http.Request) {
 func initializeTransactionLog() error {
 	var err error
 
-	transactionLogger, err = NewTransactionLogger("/tmp/transactions.log")
+	transact, err = NewPostgresTransactionLogger(PostgresDbParams{
+		host:     "localhost",
+		dbName:   "kvs",
+		user:     "test",
+		password: "hunter2",
+	})
 	if err != nil {
 		return fmt.Errorf("failed to create transaction logger: %w", err)
 	}
 
-	events, errors := transactionLogger.ReadEvents()
+	events, errors := transact.ReadEvents()
 	count, ok, e := 0, true, Event{}
 
 	for ok && err == nil {
@@ -110,7 +115,13 @@ func initializeTransactionLog() error {
 
 	log.Printf("%d events replayed\n", count)
 
-	transactionLogger.Run()
+	transact.Run()
+
+	go func() {
+		for err := range transact.Err() {
+			log.Print(err)
+		}
+	}()
 
 	return err
 }
