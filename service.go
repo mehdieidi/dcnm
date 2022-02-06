@@ -86,9 +86,9 @@ func initializeTransactionLog() error {
 
 	transact, err = NewPostgresTransactionLogger(PostgresDbParams{
 		host:     "localhost",
-		dbName:   "kvs",
-		user:     "test",
-		password: "hunter2",
+		dbName:   "test_db",
+		user:     "test_user",
+		password: "12345",
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create transaction logger: %w", err)
