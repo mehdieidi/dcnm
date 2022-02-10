@@ -4,7 +4,6 @@ package keyvalue
 
 import (
 	context "context"
-
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -12,7 +11,8 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
-const _ = grpc.SupportPackageIsVersion6
+// Requires gRPC-Go v1.32.0 or later.
+const _ = grpc.SupportPackageIsVersion7
 
 // KeyValueClient is the client API for KeyValue service.
 //
@@ -72,19 +72,26 @@ type KeyValueServer interface {
 type UnimplementedKeyValueServer struct {
 }
 
-func (*UnimplementedKeyValueServer) Get(context.Context, *GetRequest) (*GetResponse, error) {
+func (UnimplementedKeyValueServer) Get(context.Context, *GetRequest) (*GetResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
 }
-func (*UnimplementedKeyValueServer) Put(context.Context, *PutRequest) (*PutResponse, error) {
+func (UnimplementedKeyValueServer) Put(context.Context, *PutRequest) (*PutResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Put not implemented")
 }
-func (*UnimplementedKeyValueServer) Delete(context.Context, *DeleteRequest) (*PutResponse, error) {
+func (UnimplementedKeyValueServer) Delete(context.Context, *DeleteRequest) (*PutResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
 }
-func (*UnimplementedKeyValueServer) mustEmbedUnimplementedKeyValueServer() {}
+func (UnimplementedKeyValueServer) mustEmbedUnimplementedKeyValueServer() {}
 
-func RegisterKeyValueServer(s *grpc.Server, srv KeyValueServer) {
-	s.RegisterService(&_KeyValue_serviceDesc, srv)
+// UnsafeKeyValueServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to KeyValueServer will
+// result in compilation errors.
+type UnsafeKeyValueServer interface {
+	mustEmbedUnimplementedKeyValueServer()
+}
+
+func RegisterKeyValueServer(s grpc.ServiceRegistrar, srv KeyValueServer) {
+	s.RegisterService(&KeyValue_ServiceDesc, srv)
 }
 
 func _KeyValue_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -141,7 +148,10 @@ func _KeyValue_Delete_Handler(srv interface{}, ctx context.Context, dec func(int
 	return interceptor(ctx, in, info, handler)
 }
 
-var _KeyValue_serviceDesc = grpc.ServiceDesc{
+// KeyValue_ServiceDesc is the grpc.ServiceDesc for KeyValue service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var KeyValue_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "KeyValue",
 	HandlerType: (*KeyValueServer)(nil),
 	Methods: []grpc.MethodDesc{

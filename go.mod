@@ -3,11 +3,12 @@ module github.com/MehdiEidi/dcnm
 go 1.17
 
 require (
-	github.com/golang/protobuf v1.5.0
 	github.com/gorilla/mux v1.8.0
 	github.com/lib/pq v1.10.4
 	google.golang.org/grpc v1.44.0
 )
+
+require github.com/golang/protobuf v1.5.0 // indirect
 
 require (
 	golang.org/x/net v0.0.0-20200822124328-c89045814202 // indirect
