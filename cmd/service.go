@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/MehdiEidi/dcnm/internal/core"
 	"github.com/gorilla/mux"
 )
 
@@ -34,7 +35,7 @@ func keyValuePutHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = Put(key, string(value))
+	err = core.Put(key, string(value))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -51,8 +52,8 @@ func keyValueGetHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	key := vars["key"]
 
-	value, err := Get(key)
-	if errors.Is(err, ErrorNoSuchKey) {
+	value, err := core.Get(key)
+	if errors.Is(err, core.ErrorNoSuchKey) {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
@@ -70,7 +71,7 @@ func keyValueDeleteHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	key := vars["key"]
 
-	err := Delete(key)
+	err := core.Delete(key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -104,10 +105,10 @@ func initializeTransactionLog() error {
 		case e, ok = <-events:
 			switch e.EventType {
 			case EventDelete:
-				err = Delete(e.Key)
+				err = core.Delete(e.Key)
 				count++
 			case EventPut:
-				err = Put(e.Key, e.Value)
+				err = core.Put(e.Key, e.Value)
 				count++
 			}
 		}

@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = "github.com/MehdiEidi/dcnm/keyvalue";
+option go_package = "github.com/MehdiEidi/dcnm/grpc/keyvalue";
 
 // GetRequest represents a request to the key-value store for the
 // value associated with a particular key
