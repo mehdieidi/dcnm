@@ -1,4 +1,4 @@
-package main
+package core
 
 type EventType byte
 
@@ -19,9 +19,12 @@ type TransactionLogger interface {
 	WriteDelete(key string)
 	WritePut(key, value string)
 	Err() <-chan error
+
 	LastSequence() uint64
+
 	Run()
 	Wait()
 	Close() error
+
 	ReadEvents() (<-chan Event, <-chan error)
 }

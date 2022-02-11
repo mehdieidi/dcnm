@@ -1,4 +1,4 @@
-package main
+package transact
 
 import (
 	"database/sql"
@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"sync"
 
+	"github.com/MehdiEidi/dcnm/core"
 	_ "github.com/lib/pq"
 )
 
@@ -17,20 +18,51 @@ type PostgresDbParams struct {
 }
 
 type PostgresTransactionLogger struct {
-	events chan<- Event
+	events chan<- core.Event
 	errors <-chan error
 	db     *sql.DB
 	wg     *sync.WaitGroup
 }
 
+func NewPostgresTransactionLogger(param PostgresDbParams) (core.TransactionLogger, error) {
+	connStr := fmt.Sprintf("host=%s dbname=%s user=%s password=%s sslmode=disable",
+		param.host, param.dbName, param.user, param.password)
+
+	db, err := sql.Open("postgres", connStr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create db value: %w", err)
+	}
+
+	err = db.Ping()
+	if err != nil {
+		return nil, fmt.Errorf("failed to opendb connection: %w", err)
+	}
+
+	tl := &PostgresTransactionLogger{db: db, wg: &sync.WaitGroup{}}
+
+	exists, err := tl.verifyTableExists()
+	if err != nil {
+		return nil, fmt.Errorf("failed to verify table exists: %w", err)
+	}
+	if !exists {
+		if err = tl.createTable(); err != nil {
+			return nil, fmt.Errorf("failed to create table: %w", err)
+		}
+	}
+
+	return tl, nil
+}
+
 func (l *PostgresTransactionLogger) WritePut(key, value string) {
 	l.wg.Add(1)
-	l.events <- Event{EventType: EventPut, Key: key, Value: url.QueryEscape(value)}
+	l.events <- core.Event{EventType: core.EventPut, Key: key, Value: url.QueryEscape(value)}
+	l.wg.Done()
 }
 
 func (l *PostgresTransactionLogger) WriteDelete(key string) {
 	l.wg.Add(1)
-	l.events <- Event{EventType: EventDelete, Key: key}
+	l.events <- core.Event{EventType: core.EventDelete, Key: key}
+	l.wg.Done()
 }
 
 func (l *PostgresTransactionLogger) Err() <-chan error {
@@ -42,7 +74,7 @@ func (l *PostgresTransactionLogger) LastSequence() uint64 {
 }
 
 func (l *PostgresTransactionLogger) Run() {
-	events := make(chan Event, 16)
+	events := make(chan core.Event, 16)
 	l.events = events
 
 	errors := make(chan error, 1)
@@ -54,7 +86,10 @@ func (l *PostgresTransactionLogger) Run() {
 			VALUES ($1, $2, $3)`
 
 		for e := range events {
-			_, err := l.db.Exec(query, e.EventType, e.Key, e.Value)
+			_, err := l.db.Exec(
+				query,
+				e.EventType, e.Key, e.Value)
+
 			if err != nil {
 				errors <- err
 			}
@@ -76,8 +111,8 @@ func (l *PostgresTransactionLogger) Close() error {
 	return l.db.Close()
 }
 
-func (l *PostgresTransactionLogger) ReadEvents() (<-chan Event, <-chan error) {
-	outEvent := make(chan Event)
+func (l *PostgresTransactionLogger) ReadEvents() (<-chan core.Event, <-chan error) {
+	outEvent := make(chan core.Event)
 	outError := make(chan error, 1)
 
 	query := "SELECT sequence, event_type, key, value FROM transactions"
@@ -91,13 +126,16 @@ func (l *PostgresTransactionLogger) ReadEvents() (<-chan Event, <-chan error) {
 			outError <- fmt.Errorf("sql query error: %w", err)
 			return
 		}
-
 		defer rows.Close()
 
-		var e Event
+		var e core.Event
 
 		for rows.Next() {
-			err = rows.Scan(&e.Sequence, &e.EventType, &e.Key, &e.Value)
+
+			err = rows.Scan(
+				&e.Sequence, &e.EventType,
+				&e.Key, &e.Value)
+
 			if err != nil {
 				outError <- err
 				return
@@ -149,33 +187,4 @@ func (l *PostgresTransactionLogger) createTable() error {
 	}
 
 	return nil
-}
-
-func NewPostgresTransactionLogger(param PostgresDbParams) (TransactionLogger, error) {
-	connStr := fmt.Sprintf("host=%s dbname=%s user=%s password=%s sslmode=disable", param.host, param.dbName, param.user, param.password)
-
-	db, err := sql.Open("postgres", connStr)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create db value: %w", err)
-	}
-
-	err = db.Ping()
-	if err != nil {
-		return nil, fmt.Errorf("failed to opendb connection: %w", err)
-	}
-
-	tl := &PostgresTransactionLogger{db: db, wg: &sync.WaitGroup{}}
-
-	exists, err := tl.verifyTableExists()
-	if err != nil {
-		return nil, fmt.Errorf("failed to verify table exists: %w", err)
-	}
-
-	if !exists {
-		if err = tl.createTable(); err != nil {
-			return nil, fmt.Errorf("failed to create table: %w", err)
-		}
-	}
-
-	return tl, nil
 }
