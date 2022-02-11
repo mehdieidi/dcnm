@@ -56,13 +56,11 @@ func NewPostgresTransactionLogger(param PostgresDbParams) (core.TransactionLogge
 func (l *PostgresTransactionLogger) WritePut(key, value string) {
 	l.wg.Add(1)
 	l.events <- core.Event{EventType: core.EventPut, Key: key, Value: url.QueryEscape(value)}
-	l.wg.Done()
 }
 
 func (l *PostgresTransactionLogger) WriteDelete(key string) {
 	l.wg.Add(1)
 	l.events <- core.Event{EventType: core.EventDelete, Key: key}
-	l.wg.Done()
 }
 
 func (l *PostgresTransactionLogger) Err() <-chan error {

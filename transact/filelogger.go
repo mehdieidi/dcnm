@@ -30,13 +30,11 @@ func NewFileTransactionLogger(filename string) (core.TransactionLogger, error) {
 func (l *FileTransactionLogger) WritePut(key, value string) {
 	l.wg.Add(1)
 	l.events <- core.Event{EventType: core.EventPut, Key: key, Value: url.QueryEscape(value)}
-	l.wg.Done()
 }
 
 func (l *FileTransactionLogger) WriteDelete(key string) {
 	l.wg.Add(1)
 	l.events <- core.Event{EventType: core.EventDelete, Key: key}
-	l.wg.Done()
 }
 
 func (l *FileTransactionLogger) Err() <-chan error {
@@ -82,7 +80,6 @@ func (l *FileTransactionLogger) Close() error {
 	if l.events != nil {
 		close(l.events)
 	}
-
 	return l.file.Close()
 }
 

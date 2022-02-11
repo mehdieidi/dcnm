@@ -21,12 +21,19 @@ func NewKeyValueStore() *KeyValueStore {
 	}
 }
 
-func (store *KeyValueStore) Delete(key string) error {
+func (store *KeyValueStore) WithTransactionLogger(tl TransactionLogger) *KeyValueStore {
+	store.transact = tl
+	return store
+}
+
+func (store *KeyValueStore) Delete(key string, restore bool) error {
 	store.Lock()
 	delete(store.m, key)
 	store.Unlock()
 
-	store.transact.WriteDelete(key)
+	if !restore {
+		store.transact.WriteDelete(key)
+	}
 
 	return nil
 }
@@ -43,19 +50,16 @@ func (store *KeyValueStore) Get(key string) (string, error) {
 	return value, nil
 }
 
-func (store *KeyValueStore) Put(key string, value string) error {
+func (store *KeyValueStore) Put(key string, value string, restore bool) error {
 	store.Lock()
 	store.m[key] = value
 	store.Unlock()
 
-	store.transact.WritePut(key, value)
+	if !restore {
+		store.transact.WritePut(key, value)
+	}
 
 	return nil
-}
-
-func (store *KeyValueStore) WithTransactionLogger(tl TransactionLogger) *KeyValueStore {
-	store.transact = tl
-	return store
 }
 
 func (store *KeyValueStore) Restore() error {
@@ -70,11 +74,12 @@ func (store *KeyValueStore) Restore() error {
 
 		case e, ok = <-events:
 			switch e.EventType {
-			case EventDelete: // Got a DELETE event!
-				err = store.Delete(e.Key)
+			case EventDelete:
+				err = store.Delete(e.Key, true)
 				count++
-			case EventPut: // Got a PUT event!
-				err = store.Put(e.Key, e.Value)
+
+			case EventPut:
+				err = store.Put(e.Key, e.Value, true)
 				count++
 			}
 		}

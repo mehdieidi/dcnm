@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"os"
 
 	"github.com/MehdiEidi/dcnm/core"
 	"github.com/MehdiEidi/dcnm/frontend"
@@ -11,7 +10,7 @@ import (
 
 func main() {
 	// Creating TransactionLogger. An adapter that will plug into the core application's TransactionLogger plug.
-	tl, err := transact.NewTransactionLogger(os.Getenv("TLOG_TYPE"))
+	tl, err := transact.NewTransactionLogger("file")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -21,7 +20,7 @@ func main() {
 	store.Restore()
 
 	// Creating the frontend. This is a "driving agent".
-	fe, err := frontend.NewFrontEnd(os.Getenv("FRONTEND_TYPE"))
+	fe, err := frontend.NewFrontEnd("rest")
 	if err != nil {
 		log.Fatal(err)
 	}

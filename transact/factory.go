@@ -6,8 +6,8 @@ import (
 	"github.com/MehdiEidi/dcnm/core"
 )
 
-func NewTransactionLogger(s string) (core.TransactionLogger, error) {
-	switch s {
+func NewTransactionLogger(loggerType string) (core.TransactionLogger, error) {
+	switch loggerType {
 	case "file":
 		return NewFileTransactionLogger("./transactions.txt")
 
@@ -19,6 +19,6 @@ func NewTransactionLogger(s string) (core.TransactionLogger, error) {
 		return NewPostgresTransactionLogger(params)
 
 	default:
-		return nil, fmt.Errorf("no such transaction logger %s", s)
+		return nil, fmt.Errorf("no such transaction logger %s", loggerType)
 	}
 }

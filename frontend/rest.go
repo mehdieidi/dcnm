@@ -2,7 +2,7 @@ package frontend
 
 import (
 	"errors"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 
@@ -46,14 +46,14 @@ func (f *restFrontEnd) keyValuePutHandler(w http.ResponseWriter, r *http.Request
 	vars := mux.Vars(r)
 	key := vars["key"]
 
-	value, err := ioutil.ReadAll(r.Body)
+	value, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	err = f.store.Put(key, string(value))
+	err = f.store.Put(key, string(value), false)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -87,7 +87,7 @@ func (f *restFrontEnd) keyValueDeleteHandler(w http.ResponseWriter, r *http.Requ
 	vars := mux.Vars(r)
 	key := vars["key"]
 
-	err := f.store.Delete(key)
+	err := f.store.Delete(key, false)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

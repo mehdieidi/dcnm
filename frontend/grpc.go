@@ -45,5 +45,5 @@ func (s *grpcFrontEnd) Get(ctx context.Context, r *pb.GetRequest) (*pb.GetRespon
 func (s *grpcFrontEnd) Put(ctx context.Context, r *pb.PutRequest) (*pb.PutResponse, error) {
 	log.Printf("Received PUT key=%v value=%v", r.Key, r.Value)
 
-	return &pb.PutResponse{}, s.store.Put(r.Key, r.Value)
+	return &pb.PutResponse{}, s.store.Put(r.Key, r.Value, false)
 }
